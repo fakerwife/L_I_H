@@ -304,3 +304,92 @@ textarea,.generated-box pre{background:#121b28 !important}
 
 /* 오른쪽 현재 상황 패널에는 주요 관계 영역 없음 */
 #liveRelationships{display:none !important}
+
+
+/* 6단계 · 코델리아 학교생활/사회적 맥락 */
+.social-context-card{border:1px solid var(--border);border-radius:7px;background:linear-gradient(145deg,rgba(240,228,202,.05),rgba(18,12,8,.3));box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
+.daily-social-hook{margin:13px 0 14px;padding:12px 14px;border-left:3px solid var(--brass);background:rgba(183,138,66,.07);color:var(--parchment);line-height:1.6}
+.social-lead-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.social-lead{padding:13px;border:1px solid rgba(183,138,66,.2);border-radius:6px;background:rgba(236,226,200,.035)}
+.social-lead__top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.social-lead__hook{margin-top:8px;color:var(--parchment-dim);font-size:.88rem;line-height:1.55}
+.social-lead__action{margin-top:10px;width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:4px;background:rgba(183,138,66,.06);color:var(--parchment);font:inherit;cursor:pointer}
+.social-lead__action:hover{background:rgba(183,138,66,.16);color:var(--candle)}
+
+/* ===== 7단계 · 야간 탐험 ===== */
+.night-exploration-card{border:1px solid rgba(117,139,192,.25);border-radius:8px;background:linear-gradient(145deg,rgba(20,27,45,.96),rgba(11,16,27,.96));box-shadow:0 14px 34px rgba(0,0,0,.26);padding:18px;margin-bottom:18px}
+.night-explore-intro{padding:12px 14px;margin:8px 0 12px;border-left:3px solid #7189bd;background:rgba(113,137,189,.07);color:var(--parchment-dim);line-height:1.65}
+.night-start-btn{margin-top:4px}
+.night-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.night-stats>div{padding:10px 12px;border:1px solid rgba(117,139,192,.18);border-radius:6px;background:rgba(255,255,255,.02)}
+.night-stats span{display:block;color:var(--dim);font-size:.75rem;margin-bottom:4px}
+.night-stats strong{color:var(--parchment);font-size:.92rem}
+.night-dest-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:9px;margin:12px 0}
+.night-dest{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;gap:2px 8px;text-align:left;padding:11px;border:1px solid rgba(117,139,192,.2);border-radius:6px;background:rgba(255,255,255,.025);color:var(--parchment);cursor:pointer;font:inherit}
+.night-dest:hover{background:rgba(113,137,189,.10);border-color:rgba(117,139,192,.38)}
+.night-dest span{grid-row:1 / span 2;font-size:1.35rem;align-self:center}
+.night-dest strong{font-size:.88rem;font-weight:600}
+.night-dest small{color:var(--dim);font-size:.74rem}
+.night-discoveries{margin:9px 0 12px;padding:11px 13px;border-top:1px solid rgba(117,139,192,.12);border-bottom:1px solid rgba(117,139,192,.12);color:var(--parchment-dim);line-height:1.55}
+.night-discoveries strong{display:block;color:var(--candle);margin-bottom:5px}
+.night-discoveries span{color:var(--dim);font-size:.78rem}
+.night-end-btn{margin-top:2px}
+@media(max-width:700px){.night-stats{grid-template-columns:1fr 1fr}.night-dest-grid{grid-template-columns:1fr 1fr}}
+\n
+/* 8단계: 호그스미드 */
+.hogsmeade-card{border:1px solid rgba(183,138,66,.28);border-radius:8px;background:linear-gradient(145deg,rgba(46,29,18,.94),rgba(18,12,8,.96));box-shadow:0 14px 34px rgba(0,0,0,.24);padding:18px;margin-bottom:18px}
+.hogsmeade-intro{padding:12px 14px;margin:8px 0 12px;border-left:3px solid var(--brass);background:rgba(183,138,66,.07);color:var(--parchment-dim);line-height:1.65}
+.hogsmeade-go-btn,.hogsmeade-return-btn{margin-top:4px}
+.hogsmeade-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.hogsmeade-stats>div{padding:10px 12px;border:1px solid rgba(183,138,66,.18);border-radius:6px;background:rgba(255,255,255,.02)}
+.hogsmeade-stats span{display:block;color:var(--dim);font-size:.75rem;margin-bottom:4px}.hogsmeade-stats strong{color:var(--parchment);font-size:.92rem}
+.hogsmeade-place-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;margin:12px 0}
+.hogsmeade-place{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;gap:3px 9px;text-align:left;padding:12px;border:1px solid rgba(183,138,66,.20);border-radius:6px;background:rgba(255,255,255,.025);color:var(--parchment);cursor:pointer;font:inherit}
+.hogsmeade-place:hover{background:rgba(183,138,66,.09);border-color:rgba(183,138,66,.36)}
+.hogsmeade-place.visited{box-shadow:inset 0 0 0 1px rgba(109,139,110,.22)}
+.hogsmeade-place>span{grid-row:1 / span 2;font-size:1.35rem;align-self:center}.hogsmeade-place strong{font-size:.9rem}.hogsmeade-place small{color:var(--dim);font-size:.76rem;line-height:1.4}
+.hogsmeade-visited{padding:10px 12px;border-top:1px solid rgba(183,138,66,.12);border-bottom:1px solid rgba(183,138,66,.12);color:var(--dim);margin:8px 0 12px}
+@media(max-width:700px){.hogsmeade-stats{grid-template-columns:1fr}.hogsmeade-place-grid{grid-template-columns:1fr 1fr}}
+
+/* 9단계 — 방학·런던 */
+.holiday-travel-card{margin-top:18px;padding:22px;border:1px solid rgba(185,160,111,.28);border-radius:18px;background:linear-gradient(180deg,rgba(33,28,24,.96),rgba(25,22,20,.96));box-shadow:0 12px 30px rgba(0,0,0,.16)}
+.holiday-intro{margin:14px 0 18px;color:var(--text-soft);line-height:1.7}
+.holiday-start-grid,.holiday-place-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.holiday-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.holiday-stats>div{padding:12px;border:1px solid rgba(185,160,111,.2);border-radius:12px;background:rgba(255,255,255,.025)}
+.holiday-stats span{display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:4px}
+.holiday-stats strong{display:block;color:var(--text)}
+.holiday-place{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:4px;padding:14px;border:1px solid rgba(185,160,111,.18);border-radius:14px;background:rgba(255,255,255,.025);color:var(--text);cursor:pointer;transition:.16s ease}
+.holiday-place:hover{transform:translateY(-1px);border-color:rgba(185,160,111,.4);background:rgba(255,255,255,.045)}
+.holiday-place span{font-size:1.35rem}.holiday-place small{color:var(--text-muted);line-height:1.45}
+.holiday-return{margin-top:14px;width:100%}
+@media (max-width:700px){.holiday-stats{grid-template-columns:1fr}}
+
+.holiday-special{margin:0 0 16px;padding:11px 13px;border:1px solid rgba(199,174,124,.28);border-radius:12px;background:rgba(199,174,124,.07);color:var(--text)}
+
+
+/* 10단계 — 원작 사건 타임라인 */
+.canon-banner{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;margin-bottom:18px;border:1px solid rgba(154,126,78,.3);border-radius:14px;background:rgba(35,29,20,.72)}
+.canon-banner span{color:var(--muted,#b8b3a8);line-height:1.55}
+.canon-current{padding:20px;margin-bottom:22px;border:1px solid rgba(190,150,70,.42);border-radius:16px;background:linear-gradient(145deg,rgba(52,38,21,.96),rgba(27,22,18,.98));box-shadow:0 14px 34px rgba(0,0,0,.18)}
+.canon-current p,.canon-event p{line-height:1.7;color:var(--text,#e8e2d7)}
+.canon-current__note{padding:12px 14px;margin:14px 0;background:rgba(255,255,255,.035);border-left:3px solid rgba(190,150,70,.65);border-radius:8px;line-height:1.6}
+.canon-seen{margin-bottom:12px;color:#b9d5b8;font-size:.92rem}
+.canon-event{display:grid;grid-template-columns:145px 1fr;gap:18px;padding:18px 0;border-top:1px solid rgba(255,255,255,.08)}
+.canon-event--active{padding:18px;margin:0 -10px;border:1px solid rgba(190,150,70,.32);border-radius:14px;background:rgba(190,150,70,.045)}
+.canon-event__date{font-family:Cinzel,serif;color:#d6bd87;font-weight:600;padding-top:3px}
+.canon-event__title{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.canon-event__meta{margin-top:7px;color:var(--muted,#b8b3a8);font-size:.9rem}
+.canon-hook{padding:11px 13px;margin:12px 0;background:rgba(255,255,255,.028);border-radius:8px;line-height:1.55}
+@media(max-width:700px){.canon-event{grid-template-columns:1fr;gap:8px}.canon-banner{flex-direction:column}.canon-event--active{margin:0}}
+
+/* ===== 11단계 이전 통합형 원작 흐름 / JSON 세이브 ===== */
+.canon-context-card{margin:0 0 18px;padding:18px 20px;border:1px solid rgba(190,150,70,.30);border-radius:16px;background:linear-gradient(145deg,rgba(42,34,24,.92),rgba(27,22,18,.96));box-shadow:0 12px 28px rgba(0,0,0,.14)}
+.canon-context-card h2{margin:0;font-size:1.05rem}
+.canon-context-meta{margin:4px 0 10px;color:var(--muted,#b8b3a8);font-size:.9rem}
+.canon-context-card p{margin:0;line-height:1.7;color:var(--text,#e8e2d7)}
+.canon-context-guidance{margin-top:12px;padding:11px 13px;border-left:3px solid rgba(190,150,70,.62);border-radius:8px;background:rgba(255,255,255,.028);line-height:1.6;color:#cfc6b7}
+.file-save-card{margin:18px 0 14px;padding:20px;border:1px solid var(--panel-border);border-radius:16px;background:var(--panel-bg-soft)}
+.file-save-actions{display:flex;gap:10px;flex-wrap:wrap}
+.file-save-note{margin-top:12px;color:var(--panel-muted);line-height:1.6;font-size:.92rem}
+@media(max-width:700px){.file-save-actions{flex-direction:column}.file-save-actions button{width:100%}}

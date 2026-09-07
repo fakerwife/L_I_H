@@ -31,7 +31,6 @@
       <button class="nav__item" role="tab" aria-selected="false" data-target="clues">🔎<span>단서</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="inventory">🎒<span>소지품</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="shop">🛍<span>상점</span></button>
-      <button class="nav__item" role="tab" aria-selected="false" data-target="academics">📚<span>학업</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="house-points">🏆<span>기숙사 점수</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="events">📖<span>기록</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="save">💾<span>저장</span></button>
@@ -45,16 +44,27 @@
             <div class="panel-heading"><div><h1 class="panel__title">현재 상황</h1><p class="panel__subtitle" id="situationSubtitle">-</p></div><span class="pill" id="currentSchedulePill">-</span></div>
             <article class="scene-card" id="sceneCard"><div class="scene-card__empty">아직 기록된 장면이 없습니다.</div></article>
 
+            <section class="night-exploration-card" id="nightExplorationCard" hidden></section>
+            <section class="hogsmeade-card" id="hogsmeadeCard" hidden></section>
+            <section class="holiday-travel-card" id="holidayTravelCard" hidden></section>
+
             <div class="play-io-grid">
               <section class="action-card play-io-card">
                 <div class="section-heading"><h2>내 행동</h2><span class="muted">코델리아가 할 행동을 입력하세요.</span></div>
                 <div class="action-buttons play-io-buttons"><button class="primary" id="generatePromptBtn">Claude용 장면 만들기</button><button class="secondary" id="copyPromptBtn">복사</button></div>
+                <div class="quick-actions" id="quickActions" aria-label="빠른 행동"></div>
                 <textarea id="actionInput" rows="5" placeholder="예: 도서관에 가서 헤르미온느에게 말을 건다."></textarea>
                 <div class="generated-box" id="generatedPromptBox" hidden><div class="generated-box__header"><strong>Claude에 보낼 내용</strong><span class="muted">복사해서 Claude에 붙여넣으세요.</span></div><pre id="generatedPrompt"></pre></div>
               </section>
 
               <section class="claude-card play-io-card"> <div class="section-heading"> <h2>Claude 답변</h2> <span class="muted">Claude의 답변을 붙여넣으세요.</span> </div> <!-- 버튼을 텍스트 입력칸 위로 이동 --> <div class="action-buttons play-io-buttons"> <button class="primary" id="applyClaudeBtn">장면 반영</button> <button class="secondary" id="clearClaudeBtn">지우기</button> </div> <textarea id="claudeResponse" rows="5" placeholder="Claude의 답변 전체를 붙여넣으세요. 예: [장면] ... [상태변경] 시간: +30분 위치: 도서관"></textarea> <div class="notice" id="parseNotice" hidden></div> </section>
             </div>
+
+            <section class="social-context-card">
+              <div class="section-heading"><div><h2>오늘의 학교생활</h2><span class="muted">현재 장면을 풍부하게 만들 수 있는 사람과 소재</span></div><span class="pill">SOCIAL</span></div>
+              <div class="daily-social-hook" id="dailySocialHook">-</div>
+              <div class="social-lead-grid" id="socialLeadList"></div>
+            </section>
           </div>
 
           <aside class="live-panel" aria-label="현재 게임 요약">
@@ -87,10 +97,21 @@
       <section class="panel" data-panel="clues" hidden><h1 class="panel__title">단서</h1><p class="panel__subtitle">사건에서 발견해 확정된 정보입니다. 이후 사건에서 다시 활용될 수 있습니다.</p><div class="card-grid" id="clueList"></div></section>
       <section class="panel" data-panel="inventory" hidden><h1 class="panel__title">소지품</h1><div class="money-card"><div><span class="muted">현재 소지금</span><strong id="inventoryMoney">0갈레온</strong></div><span class="money-note">1갈레온 = 17시클 · 1시클 = 29너클</span></div><div class="card-grid" id="inventoryList"></div></section>
       <section class="panel" data-panel="shop" hidden><div class="panel-heading"><div><h1 class="panel__title">상점</h1><p class="panel__subtitle">호그스미드 방문일에 호그스미드에서만 이용할 수 있습니다.</p><div id="shopStatus" class="shop-closed">이용 상태 확인 중</div></div><span class="pill" id="shopWallet">0갈레온</span></div><div class="shop-tabs" id="shopTabs"></div><div class="shop-grid" id="shopList"></div></section>
-      <section class="panel" data-panel="academics" hidden><h1 class="panel__title">학업</h1><p class="panel__subtitle">현재 학년의 전반적인 숙련도를 기록합니다.</p><div class="academic-list" id="academicList"></div></section>
       <section class="panel" data-panel="house-points" hidden><h1 class="panel__title">기숙사 점수</h1><p class="panel__subtitle">네 기숙사의 현재 점수와 최근 변동을 확인합니다.</p><div class="house-grid" id="houseGrid"></div><div class="history-list" id="pointsHistory"></div></section>
       <section class="panel" data-panel="events" hidden><h1 class="panel__title">생활 기록</h1><div class="timeline" id="eventsList"></div></section>
-      <section class="panel" data-panel="save" hidden><h1 class="panel__title">저장 / 불러오기</h1><div class="save-grid" id="saveGrid"></div><button class="secondary" id="newGameBtn">새 게임으로 초기화</button></section>
+      <section class="panel" data-panel="save" hidden>
+        <h1 class="panel__title">저장 / 불러오기</h1>
+        <p class="panel__subtitle">게임 상태를 JSON 파일로 저장해 안전하게 보관하고, 같은 파일을 다시 불러와 이어서 플레이합니다.</p>
+        <div class="file-save-card">
+          <div class="file-save-actions">
+            <button class="primary" id="exportSaveBtn">JSON 파일로 저장</button>
+            <button class="secondary" id="importSaveBtn">JSON 파일 불러오기</button>
+            <input id="importSaveInput" type="file" accept="application/json,.json" hidden />
+          </div>
+          <div class="file-save-note" id="fileSaveStatus">파일 저장 방식만 사용합니다. 브라우저를 바꿔도 JSON 파일만 있으면 이어서 플레이할 수 있습니다.</div>
+        </div>
+        <button class="secondary" id="newGameBtn">새 게임으로 초기화</button>
+      </section>
     </main>
   </div>
 </div>
