@@ -884,10 +884,40 @@ function renderSocialContext(){
   }));
 }
 
+function detectDiceCheck(action){
+  const text=String(action||'').trim();
+  if(!text)return null;
+  const rules=[
+    {skill:'주문', difficulty:65, reason:'주문 시전·명중 판정', patterns:[/주문을?\s*(사용|시전|건다|외운|날린|쏜)/i,/스투페파이|엑스펠리아르무스|프로테고|리덕토|인센디오|아씨오|루모스|윙가르디움/i,/마법 결투|결투|공격 주문/i]},
+    {skill:'변신술', difficulty:65, reason:'변신술 판정', patterns:[/변신술|변신한다|변형한다|형태를\s*(바꾼|변환)/i]},
+    {skill:'마법약', difficulty:65, reason:'마법약 제조·처리 판정', patterns:[/마법약|약을\s*(만든|제조|끓인|조제)|재료를\s*(손질|넣|처리)/i]},
+    {skill:'어둠의 마법 방어술', difficulty:65, reason:'어둠의 마법 방어·위험 대응 판정', patterns:[/어둠의 마법 방어|방어 주문|방어한다|위험에\s*(대처|대응)|저주를\s*(막|피)/i]},
+    {skill:'관찰', difficulty:65, reason:'주변 관찰 판정', patterns:[/자세히\s*(살핀|관찰|본다)|관찰한다|살펴본다|주변을\s*(둘러|살펴)|흔적을\s*(찾|조사)|발자국|이상한\s*(점|흔적|물건)/i]},
+    {skill:'통찰', difficulty:65, reason:'상대의 의도·거짓말 파악 판정', patterns:[/거짓말|진심을\s*(파악|읽)|의도를\s*(파악|읽)|속내|수상한\s*(태도|말)|눈치를\s*(챈|살핀)/i]},
+    {skill:'사교', difficulty:65, reason:'설득·사회적 상호작용 판정', patterns:[/설득|협상|흥정|달래|설명해서\s*(납득|동의)|부탁해서| convencer/i]},
+    {skill:'은밀', difficulty:65, reason:'은밀 행동 판정', patterns:[/몰래|들키지\s*(않|않고)|숨어서|숨는다|조용히\s*(따라|이동|다가)|잠입|몰래\s*따라/i]},
+    {skill:'탐색', difficulty:65, reason:'장소 탐색·단서 발견 판정', patterns:[/수색|탐색|뒤져|찾아본다|비밀|숨겨진|숨은|단서를\s*(찾|조사)|구석구석/i]},
+    {skill:'비행', difficulty:65, reason:'비행 판정', patterns:[/빗자루|비행한다|날아간다|공중에서|공중\s*행동/i]}
+  ];
+  for(const rule of rules){
+    if(rule.patterns.some(re=>re.test(text)))return rule;
+  }
+  return null;
+}
+
+function rollDiceForAction(action){
+  const check=detectDiceCheck(action);
+  if(!check)return null;
+  return rollCheck(check);
+}
+
 function generateClaudePrompt(){
   const action=document.getElementById('actionInput').value.trim();
   if(!action){showNotice('코델리아의 행동을 먼저 입력해 주세요.',true);return;}
   gameState.lastAction=action;
+
+  // 판정이 필요한 행동이면 웹사이트가 먼저 실제 d100을 굴리고, 그 결과를 이번 프롬프트에 자동 삽입합니다.
+  const actionDice=rollDiceForAction(action);
 
   // 매 턴 전체 상태를 반복해서 보내지 않도록 최소 상태만 전달합니다.
   const sched=currentSchedule();
@@ -1007,13 +1037,18 @@ ${(()=>{const c=getCanonContext();return c?`${c.event.date} · ${c.event.title} 
 - 플레이어의 행동 때문에 원작 사건 현장으로 자동 이동시키지 않는다. 현재 일정과 위치가 맞을 때만 현장 장면으로 묘사하고, 그렇지 않으면 간접적으로 접한다.
 - 원작 사건의 핵심 결과, 핵심 인물의 역할, 사건의 순서는 유지한다. 코델리아는 주변 학생으로서 관찰·대화·소문·개인적 행동을 할 수 있다.
 
-${gameState.lastDice?`
-[최근 주사위 판정]
-판정: ${gameState.lastDice.skill}
-주사위: ${gameState.lastDice.roll}
-목표값: ${gameState.lastDice.target}
-결과: ${gameState.lastDice.result}
-판정 이유: ${gameState.lastDice.reason}`:''}
+${actionDice?`
+[이번 행동의 주사위 판정 — 웹사이트에서 실제로 굴린 결과]
+판정 능력: ${actionDice.skill}
+기본 능력값: ${actionDice.base}
+난이도: ${actionDice.difficulty}
+보정: ${actionDice.modifier>=0?'+':''}${actionDice.modifier}
+목표값: ${actionDice.target}
+주사위: ${actionDice.roll}
+결과: ${actionDice.result}
+판정 이유: ${actionDice.reason}
+
+중요: 위 주사위 결과는 이미 확정되었습니다. 결과를 다시 굴리거나 변경하지 말고, 반드시 이 결과를 전제로 장면을 진행하세요.`:''}
 
 [출력 형식]
 [장면]
@@ -1185,7 +1220,7 @@ function renderGame(){
   renderHogsmeade();
   renderHolidayTravel();
   renderCanonContext();
-  renderStatus();renderSchedule();renderSituation();renderQuickActions();renderSocialContext();renderRelationships();renderGossip();renderInventory();renderClues();renderShop();renderAcademics();renderHouses();renderEvents();renderRecentChanges();renderLivePanel();renderSaves();
+  renderStatus();renderSchedule();renderSituation();renderDice();renderQuickActions();renderSocialContext();renderRelationships();renderGossip();renderInventory();renderClues();renderShop();renderAcademics();renderHouses();renderEvents();renderRecentChanges();renderLivePanel();renderSaves();
 }
 function renderStatus(){
   document.getElementById('statDate').textContent=`${dateDisplay(gameState.date)} · ${weekday(gameState.date)}`;
