@@ -28,6 +28,7 @@
       <button class="nav__item" role="tab" aria-selected="false" data-target="schedule">📅<span>일정</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="relationships">👥<span>관계</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="gossip">🗣<span>가십</span></button>
+      <button class="nav__item" role="tab" aria-selected="false" data-target="dice">🎲<span>주사위</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="clues">🔎<span>단서</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="inventory">🎒<span>소지품</span></button>
       <button class="nav__item" role="tab" aria-selected="false" data-target="shop">🛍<span>상점</span></button>
@@ -94,6 +95,28 @@
       <section class="panel" data-panel="schedule" hidden><h1 class="panel__title">일정</h1><p class="schedule-subtitle" id="scheduleSubtitle">오늘의 일정</p><ul class="schedule-list" id="scheduleList"></ul></section>
       <section class="panel" data-panel="relationships" hidden><h1 class="panel__title">관계</h1><div class="relationship-summary" id="relationshipSummary"></div><div class="card-grid" id="relationshipList"></div></section>
       <section class="panel" data-panel="gossip" hidden><h1 class="panel__title">가십</h1><div class="card-grid" id="gossipList"></div></section>
+      <section class="panel" data-panel="dice" hidden>
+        <h1 class="panel__title">🎲 주사위 판정</h1>
+        <p class="panel__subtitle">주문·탐색·사교 같은 행동을 실제 d100 판정으로 처리합니다. 주사위는 이 페이지에서 직접 굴러가며 Claude는 결과를 바꿀 수 없습니다.</p>
+        <div class="dice-layout">
+          <section class="dice-card">
+            <div class="section-heading"><div><h2>판정 굴리기</h2><span class="muted">1–5 대성공 · 6–목표 성공 · 96–100 대실패</span></div><span class="pill" id="diceSkillValue">기본값</span></div>
+            <div class="dice-form-grid">
+              <label>판정 능력<select id="diceSkill"></select></label>
+              <label>난이도<select id="diceDifficulty"></select></label>
+              <label>보정<input id="diceModifier" type="number" value="0" min="-30" max="30" step="1"></label>
+              <label class="dice-reason">판정 이유<input id="diceReason" type="text" placeholder="예: 스투페파이 명중 판정"></label>
+            </div>
+            <button class="primary dice-roll-btn" id="rollDiceBtn">🎲 d100 굴리기</button>
+            <div id="diceResult" class="dice-result"></div>
+            <div class="dice-note">주문·변신술·마법약·어둠의 마법 방어술은 현재 학업 수치를 기본값으로 사용합니다. 관찰·통찰·사교·은밀·탐색은 기본 능력값으로 시작합니다.</div>
+          </section>
+          <section class="dice-card">
+            <div class="section-heading"><div><h2>최근 판정</h2><span class="muted">최근 10개의 주사위 기록</span></div></div>
+            <div id="diceHistory" class="dice-history"></div>
+          </section>
+        </div>
+      </section>
       <section class="panel" data-panel="clues" hidden><h1 class="panel__title">단서</h1><p class="panel__subtitle">사건에서 발견해 확정된 정보입니다. 이후 사건에서 다시 활용될 수 있습니다.</p><div class="card-grid" id="clueList"></div></section>
       <section class="panel" data-panel="inventory" hidden><h1 class="panel__title">소지품</h1><div class="money-card"><div><span class="muted">현재 소지금</span><strong id="inventoryMoney">0갈레온</strong></div><span class="money-note">1갈레온 = 17시클 · 1시클 = 29너클</span></div><div class="card-grid" id="inventoryList"></div></section>
       <section class="panel" data-panel="shop" hidden><div class="panel-heading"><div><h1 class="panel__title">상점</h1><p class="panel__subtitle">호그스미드 방문일에 호그스미드에서만 이용할 수 있습니다.</p><div id="shopStatus" class="shop-closed">이용 상태 확인 중</div></div><span class="pill" id="shopWallet">0갈레온</span></div><div class="shop-tabs" id="shopTabs"></div><div class="shop-grid" id="shopList"></div></section>

@@ -220,6 +220,22 @@ const SHOPS = {
   ]
 };
 
+const DICE_SKILLS = [
+  {key:'주문',label:'주문',source:'academic',valueKey:'주문',desc:'주문 시전, 마법 결투, 주문의 정밀도'},
+  {key:'변신술',label:'변신술',source:'academic',valueKey:'변신술',desc:'변신술과 형태 변화'},
+  {key:'마법약',label:'마법약',source:'academic',valueKey:'마법약',desc:'마법약 제조와 재료 처리'},
+  {key:'어둠의 마법 방어술',label:'어둠의 마법 방어술',source:'academic',valueKey:'어둠의 마법 방어술',desc:'방어 주문과 위험 대응'},
+  {key:'관찰',label:'관찰',source:'fixed',base:60,desc:'흔적, 물건, 주변의 작은 변화를 알아차리기'},
+  {key:'통찰',label:'통찰',source:'fixed',base:55,desc:'상대의 말과 태도에서 숨은 의도를 읽기'},
+  {key:'사교',label:'사교',source:'fixed',base:65,desc:'대화, 설득, 분위기와 관계를 다루기'},
+  {key:'은밀',label:'은밀',source:'fixed',base:50,desc:'조용히 움직이고 들키지 않기'},
+  {key:'탐색',label:'탐색',source:'fixed',base:60,desc:'장소를 조사하고 숨은 단서를 찾기'},
+  {key:'비행',label:'비행',source:'academic',valueKey:'비행',base:65,desc:'빗자루와 공중 행동'}
+];
+const DICE_DIFFICULTIES = [
+  ['매우 쉬움',35],['쉬움',50],['보통',65],['어려움',80],['매우 어려움',90]
+];
+
 const INITIAL_STATE = {
   version: 10,
   gameVersion: '10단계 — 원작 사건 타임라인',
@@ -255,6 +271,8 @@ const INITIAL_STATE = {
   events: [],
   sceneHistory: [],
   changes: [],
+  diceHistory: [],
+  lastDice: null,
   lastScene: '',
   lastSceneAt: '',
   lastAction: '',
@@ -268,6 +286,54 @@ const INITIAL_STATE = {
 
 let gameState = deepClone(INITIAL_STATE);
 let activeShop = Object.keys(SHOPS)[0];
+
+function getDiceSkillValue(key){
+  const skill=DICE_SKILLS.find(x=>x.key===key);
+  if(!skill)return 50;
+  if(skill.source==='academic')return Math.max(1,Math.min(100,Number(gameState.academics?.[skill.valueKey]??skill.base??50)));
+  if(skill.key==='비행')return Math.max(1,Math.min(100,Number(gameState.academics?.['비행']??skill.base??50)));
+  return Math.max(1,Math.min(100,Number(skill.base??50)));
+}
+function rollD100(){return Math.floor(Math.random()*100)+1;}
+function diceResultLabel(roll,target){
+  if(roll<=5)return '대성공';
+  if(roll<=target)return '성공';
+  if(roll>=96)return '대실패';
+  return '실패';
+}
+function rollCheck({skill='주문',difficulty=65,modifier=0,reason='일반 판정'}={}){
+  const base=getDiceSkillValue(skill);
+  const target=Math.max(5,Math.min(95,base+Number(modifier||0)-(Number(difficulty||65)-65)));
+  const roll=rollD100();
+  const result=diceResultLabel(roll,target);
+  const record={date:gameState.date,time:gameState.time,skill,difficulty:Number(difficulty||65),modifier:Number(modifier||0),base,target,roll,result,reason:String(reason||'일반 판정')};
+  gameState.lastDice=record;
+  gameState.diceHistory.unshift(record);
+  gameState.diceHistory=gameState.diceHistory.slice(0,30);
+  addChange('dice',`${skill} ${result} (${roll}/${target})`);
+  saveAuto();
+  renderGame();
+  return record;
+}
+function renderDice(){
+  const skillEl=document.getElementById('diceSkill');
+  const diffEl=document.getElementById('diceDifficulty');
+  const modEl=document.getElementById('diceModifier');
+  const reasonEl=document.getElementById('diceReason');
+  const resultEl=document.getElementById('diceResult');
+  const historyEl=document.getElementById('diceHistory');
+  if(!skillEl||!diffEl||!resultEl||!historyEl)return;
+  skillEl.innerHTML=DICE_SKILLS.map(x=>`<option value="${esc(x.key)}">${esc(x.label)} · ${getDiceSkillValue(x.key)}</option>`).join('');
+  diffEl.innerHTML=DICE_DIFFICULTIES.map(([label,value])=>`<option value="${value}" ${value===65?'selected':''}>${esc(label)} · ${value}</option>`).join('');
+  const last=gameState.lastDice;
+  resultEl.innerHTML=last?`<div class="dice-result__top"><span class="dice-result__label">최근 판정 · ${esc(last.result)}</span><span class="dice-result__time">${esc(dateDisplay(last.date))} ${esc(timeDisplay(last.time))}</span></div><div class="dice-roll"><span>🎲</span><strong>${last.roll}</strong><small>/ ${last.target}</small></div><div class="dice-result__meta">${esc(last.skill)} · ${esc(last.reason)} · 기본 ${last.base}${last.modifier?` · 보정 ${last.modifier>0?'+':''}${last.modifier}`:''}</div>`:`<div class="dice-empty">아직 주사위를 굴리지 않았습니다.<br><span>주문, 탐색, 사교 같은 행동의 결과를 실제 d100 판정으로 결정할 수 있어요.</span></div>`;
+  historyEl.innerHTML=gameState.diceHistory.length?gameState.diceHistory.slice(0,10).map(x=>`<div class="dice-history-item"><div><strong>${esc(x.skill)}</strong><span>${esc(x.result)}</span><small>${esc(x.reason)}</small></div><b>${x.roll}/${x.target}</b></div>`).join(''):`<div class="empty compact-empty">판정 기록이 없습니다.</div>`;
+  const preview=document.getElementById('diceSkillValue');
+  if(preview)preview.textContent=`기본값 ${getDiceSkillValue(skillEl.value)}`;
+  skillEl.onchange=()=>{if(preview)preview.textContent=`기본값 ${getDiceSkillValue(skillEl.value)}`};
+  const btn=document.getElementById('rollDiceBtn');
+  if(btn)btn.onclick=()=>rollCheck({skill:skillEl.value,difficulty:+diffEl.value,modifier:+(modEl?.value||0),reason:reasonEl?.value.trim()||'일반 판정'});
+}
 
 function deepClone(obj){return JSON.parse(JSON.stringify(obj));}
 function esc(s){return String(s ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
@@ -879,6 +945,10 @@ ${previousScene?`직전 장면: ${previousScene}`:''}
 [코델리아의 행동]
 ${action}
 
+- 판정이 필요한 행동(주문, 위험한 탐색, 은밀 행동, 설득·통찰 등)은 웹사이트가 제공한 최근 주사위 판정 결과를 반드시 그대로 따른다. 결과를 다시 굴리거나 임의로 바꾸지 않는다.
+- 주사위 판정이 제공되지 않은 평범한 행동은 임의로 판정을 만들어내지 않는다. 필요하다면 장면을 먼저 진행하고 다음 행동에서 판정이 필요하다고 자연스럽게 드러낸다.
+- [판정 결과]가 있으면 숫자와 성공 단계가 실제 게임 결과이며, 장면 서술은 그 결과에 맞춰 작성한다. 대성공은 특별히 유리한 결과, 대실패는 새로운 곤란이나 작은 사고를 만들 수 있지만 이야기를 막지는 않는다.
+- 판정은 결과를 정하는 도구이지 코델리아의 행동 자체를 대신 결정하는 도구가 아니다.
 [진행 규칙]
 - 코델리아의 말·행동·생각·감정은 플레이어가 정한 내용만 사용한다.
 - 일상을 우선하고 매번 큰 사건을 만들지 않는다.
@@ -936,6 +1006,14 @@ ${(()=>{const c=getCanonContext();return c?`${c.event.date} · ${c.event.title} 
 - 원작 사건은 별도의 미니게임이나 선택 페이지로 이동시키지 않는다. 현재 장면의 시간표·장소·행동 흐름 속에서만 자연스럽게 반영한다.
 - 플레이어의 행동 때문에 원작 사건 현장으로 자동 이동시키지 않는다. 현재 일정과 위치가 맞을 때만 현장 장면으로 묘사하고, 그렇지 않으면 간접적으로 접한다.
 - 원작 사건의 핵심 결과, 핵심 인물의 역할, 사건의 순서는 유지한다. 코델리아는 주변 학생으로서 관찰·대화·소문·개인적 행동을 할 수 있다.
+
+${gameState.lastDice?`
+[최근 주사위 판정]
+판정: ${gameState.lastDice.skill}
+주사위: ${gameState.lastDice.roll}
+목표값: ${gameState.lastDice.target}
+결과: ${gameState.lastDice.result}
+판정 이유: ${gameState.lastDice.reason}`:''}
 
 [출력 형식]
 [장면]
@@ -1166,6 +1244,31 @@ function renderRecentChanges(){const el=document.getElementById('recentChanges')
 function renderLivePanel(){const current=currentSchedule();const gossipEl=document.getElementById('liveGossip');if(gossipEl)gossipEl.innerHTML=gameState.rumors.length?gameState.rumors.slice(0,3).map(r=>`<div class="live-gossip"><strong>${esc(r.text)}</strong><span>${esc(r.truth)}</span></div>`).join(''):`<div class="compact-empty">현재 가십 없음</div>`;const houseEl=document.getElementById('liveHouses');if(houseEl){const ranked=Object.entries(gameState.housePoints).sort((a,b)=>b[1]-a[1]);houseEl.innerHTML=ranked.map(([house,score],i)=>`<div class="live-row"><span>${i===0?'🏆 ':''}${esc(house)}</span><strong>${score}</strong></div>`).join('')}const liveStatus=document.getElementById('liveStatus');if(liveStatus)liveStatus.innerHTML=`<div class="live-status-row"><span>날짜</span><strong>${dateDisplay(gameState.date)} · ${weekday(gameState.date)}</strong></div><div class="live-status-row"><span>시간</span><strong>${timeDisplay(gameState.time)}</strong></div><div class="live-status-row"><span>일정</span><strong>${esc(current?.subject||'자유시간')}</strong></div><div class="live-status-row"><span>장소</span><strong>${esc(gameState.location)}</strong></div><div class="live-status-row"><span>소지금</span><strong>${esc(formatMoney())}</strong></div>`}
 
 function renderSaves(){}
+
+function mergeState(raw){
+  const base=deepClone(INITIAL_STATE);
+  const incoming=(raw&&typeof raw==='object')?raw:{};
+  const merged={...base,...incoming};
+  merged.schedule=incoming.schedule||base.schedule;
+  merged.relationships={...base.relationships,...(incoming.relationships||{})};
+  merged.academics={...base.academics,...(incoming.academics||{})};
+  merged.housePoints={...base.housePoints,...(incoming.housePoints||{})};
+  merged.inventory=Array.isArray(incoming.inventory)?incoming.inventory.map(normalizeItemObject):base.inventory;
+  merged.rumors=Array.isArray(incoming.rumors)?incoming.rumors:[];
+  merged.letters=Array.isArray(incoming.letters)?incoming.letters:[];
+  merged.clues=Array.isArray(incoming.clues)?incoming.clues:[];
+  merged.events=Array.isArray(incoming.events)?incoming.events:[];
+  merged.sceneHistory=Array.isArray(incoming.sceneHistory)?incoming.sceneHistory:[];
+  merged.changes=Array.isArray(incoming.changes)?incoming.changes.slice(0,20):[];
+  merged.diceHistory=Array.isArray(incoming.diceHistory)?incoming.diceHistory.slice(0,30):[];
+  merged.lastDice=incoming.lastDice&&typeof incoming.lastDice==='object'?incoming.lastDice:(merged.diceHistory[0]||null);
+  merged.pointsHistory=Array.isArray(incoming.pointsHistory)?incoming.pointsHistory:[];
+  merged.canonSeen=Array.isArray(incoming.canonSeen)?incoming.canonSeen:[];
+  merged.holidayTravel={...base.holidayTravel,...(incoming.holidayTravel||{})};
+  merged.nightExploration={...base.nightExploration,...(incoming.nightExploration||{})};
+  merged.hogsmeadeVisit={...base.hogsmeadeVisit,...(incoming.hogsmeadeVisit||{})};
+  return merged;
+}
 
 function stateForSave(){
   const payload=deepClone(gameState);
