@@ -409,3 +409,18 @@ textarea,.generated-box pre{background:#121b28 !important}
 .dice-result__label{color:var(--candle);font-weight:700}
 .dice-roll{display:flex;justify-content:center;align-items:baseline;gap:8px;margin:12px 0 3px}.dice-roll span{font-size:1.4rem}.dice-roll strong{font:700 3.2rem var(--display);color:var(--candle);line-height:1}.dice-roll small{color:var(--dim);font-size:1rem}.dice-result__meta{text-align:center;color:var(--parchment-dim);font-size:.85rem}.dice-empty{text-align:center;padding:25px 10px;color:var(--dim);line-height:1.65}.dice-empty span{font-size:.84rem}.dice-note{margin-top:12px;color:var(--dim);font-size:.78rem;line-height:1.55}.dice-history{display:flex;flex-direction:column;gap:7px}.dice-history-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 11px;border-bottom:1px solid rgba(117,139,192,.12)}.dice-history-item div{display:flex;flex-direction:column;min-width:0}.dice-history-item strong{color:var(--parchment)}.dice-history-item span{color:var(--candle);font-size:.82rem}.dice-history-item small{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px}.dice-history-item b{font-family:var(--display);color:var(--candle);white-space:nowrap}
 @media(max-width:800px){.dice-layout{grid-template-columns:1fr}.dice-form-grid{grid-template-columns:1fr}.dice-reason{grid-column:auto}}
+
+/* 가십: 한 개씩 가로로 길게, 위에서 아래로 차곡차곡 쌓이는 목록 */
+#gossipList{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+#gossipList .simple-card{
+  width:100%;
+  min-height:0;
+  box-sizing:border-box;
+}
+#gossipList .simple-card .card-row{
+  align-items:flex-start;
+}
