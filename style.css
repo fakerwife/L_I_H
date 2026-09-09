@@ -424,3 +424,9 @@ textarea,.generated-box pre{background:#121b28 !important}
 #gossipList .simple-card .card-row{
   align-items:flex-start;
 }
+
+/* 숙제 */
+.homework-card{display:flex;flex-direction:column;gap:8px}
+.homework-progress{height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:3px}
+.homework-progress-bar{height:100%;border-radius:999px;background:var(--accent,#8fa8d8);transition:width .25s ease}
+.homework-meta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted,#94a0b5)}

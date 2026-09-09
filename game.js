@@ -256,6 +256,7 @@ const INITIAL_STATE = {
     '조지 위즐리': {value:27, note:'학교 행사와 소문을 통해 알게 된 사이', house:'그리핀도르', year:6}
   },
   rumors: [],
+  homework: [],
   letters: [],
   clues: [],
   inventory: [
@@ -970,6 +971,7 @@ ${relatedNames?`현재 행동 관련 관계: ${relatedNames}`:''}
 ${recentClues?`최근 단서: ${recentClues}`:'최근 단서: 없음'}
 최근 편지: ${(gameState.letters||[]).slice(0,3).map(l=>`${l.from}: ${l.subject}`).join(' / ')||'없음'}
 ${previousScene?`직전 장면: ${previousScene}`:''}
+숙제 목록: ${(gameState.homework||[]).slice(0,8).map(h=>`${h.subject} · ${h.title} · ${h.progress||0}% · 제출 ${h.due||'미정'}`).join(' / ')||'없음'}
 야간 탐험: ${gameState.nightExploration?.active?`진행 중 · 현재 ${gameState.location} · 방문 ${gameState.nightExploration.steps||0}곳 · 경계 ${gameState.nightExploration.alert||0}/5`:'비활성'}
 
 [코델리아의 행동]
@@ -989,6 +991,10 @@ ${action}
 - 시간표는 고정된 일정이다. 현재 일정의 종료 시각을 절대 넘기지 않는다.
 - 행동에 필요한 시간이 남은 시간보다 길다면 남은 시간까지만 처리한다.
 - 다음 일정이 시작되면 현재 장면을 마무리하고 다음 일정으로 넘어간다.
+- 숙제나 과제가 등장하면 반드시 [상태변경]에 \`숙제: 과목 | 제목 | 제출일: 기한\` 형식으로 등록한다.
+- 코델리아가 자습·도서관·여가 시간에 숙제를 실제로 하면 \`숙제 진행: 제목 | 완성도: +% | 소요: 분\`을 기록한다. 완료했다면 \`숙제 완료: 제목 | 소요: 분\`을 기록한다. 숙제 진행도는 0~100%로 누적한다.
+- 숙제 진행은 실제 시간과 함께 처리한다. 숙제에 45분을 썼다면 \`시간: +45분\`과 숙제 진행도를 함께 기록한다. 수업·이동·식사 중에는 임의로 숙제를 진행시키지 않는다.
+- 제출일이 \`다음 마법약 수업\`처럼 상대적으로 주어지면 그 표현을 그대로 저장해도 된다. 실제 날짜를 임의로 만들어내지 않는다.
 - **시간은 반드시 실제로 흐른다.** 코델리아가 이동·대화·식사·수업·탐색·연습 등 행동을 했다면 그 행동에 걸린 시간을 반드시 [상태변경]의 '시간: +분'으로 기록한다. 장면을 진행했는데 시간이 0분인 상태변경은 만들지 않는다.
 - 수업을 들으러 가거나 수업에 참석하는 행동이라면 이동과 수업 진행에 걸린 시간을 반영한다. 예를 들어 08:00에 09:00 수업에 가서 수업을 들었다면 시간이 그대로 08:00에 머물러서는 안 되며, 실제 장면에 맞게 최소 09:00 이후로 진행한다.
 - 평범한 짧은 대화나 간단한 행동도 보통 5~20분 정도의 실제 시간을 소모한다. 행동에 걸린 시간을 임의로 0분으로 두지 않는다.
@@ -1133,6 +1139,30 @@ if((m=/^관계\s*:\s*(.+?)\s+([+-]\d+)\s*$/i.exec(line))){
   changes++;
   continue;
 }
+    if((m=/^숙제\s*:\s*([^|]+?)\s*\|\s*(.+?)\s*\|\s*제출일\s*:\s*(.+)$/i.exec(line))){
+      const subject=m[1].trim(), title=m[2].trim(), due=m[3].trim();
+      const existing=gameState.homework.find(h=>h.subject===subject&&h.title===title);
+      if(existing){ existing.due=due; }
+      else gameState.homework.unshift({subject,title,due,progress:0,timeSpent:0,status:'진행 중',assignedDate:gameState.date});
+      changes++; continue;
+    }
+    if((m=/^숙제 진행\s*:\s*(.+?)\s*\|\s*(?:진행도|완성도)\s*:\s*([+-]?\d+)\s*%?(?:\s*\|\s*(?:소요|시간)\s*:\s*(\d+)\s*분?)?$/i.exec(line))){
+      const title=m[1].trim(), delta=Number(m[2]), minutes=Number(m[3]||0);
+      const h=gameState.homework.find(x=>x.title===title);
+      if(h){
+        h.progress=Math.max(0,Math.min(100,h.progress+delta));
+        h.timeSpent=Math.max(0,h.timeSpent+minutes);
+        h.status=h.progress>=100?'완료':'진행 중';
+        changes++;
+      }
+      continue;
+    }
+    if((m=/^숙제 완료\s*:\s*(.+?)(?:\s*\|\s*소요\s*:\s*(\d+)\s*분?)?$/i.exec(line))){
+      const title=m[1].trim(), minutes=Number(m[2]||0);
+      const h=gameState.homework.find(x=>x.title===title);
+      if(h){h.progress=100;h.status='완료';h.timeSpent+=minutes;changes++;}
+      continue;
+    }
     if((m=/^학업\s*:\s*([^:]+):\s*([+-]?\d+)/i.exec(line))){adjustAcademics(m[1].trim(),+m[2]);changes++;continue;}
     if((m=/^소지품\s*:\s*(.+?):\s*([+-]?\d+)/i.exec(line))){const item=m[1].trim(),qty=+m[2];if(qty>0)addInventory(item,qty);else removeInventory(item,Math.abs(qty));changes++;continue;}
     if((m=/^기숙사 점수\s*:\s*(그리핀도르|슬리데린|래번클로|후플푸프)\s*:\s*([+-]?\d+)(?:\s*\|\s*(.*))?$/i.exec(line))){adjustHouse(m[1],+m[2],m[3]||'');changes++;continue;}
@@ -1259,7 +1289,7 @@ function renderGame(){
   renderHogsmeade();
   renderHolidayTravel();
   renderCanonContext();
-  renderStatus();renderSchedule();renderSituation();renderDice();renderQuickActions();renderSocialContext();renderRelationships();renderGossip();renderInventory();renderClues();renderShop();renderAcademics();renderHouses();renderEvents();renderRecentChanges();renderLivePanel();renderSaves();
+  renderStatus();renderSchedule();renderSituation();renderQuickActions();renderSocialContext();renderRelationships();renderGossip();renderHomework();renderInventory();renderClues();renderShop();renderAcademics();renderHouses();renderEvents();renderRecentChanges();renderLivePanel();renderSaves();
 }
 function renderStatus(){
   document.getElementById('statDate').textContent=`${dateDisplay(gameState.date)} · ${weekday(gameState.date)}`;
@@ -1291,6 +1321,26 @@ function renderSituation(){
   const card=document.getElementById('sceneCard');card.innerHTML=gameState.lastScene?`<div class="scene-meta"><span class="meta-chip">${esc(gameState.lastSceneAt||`${gameState.date} ${gameState.time}`)}</span><span class="meta-chip">📍 ${esc(gameState.location)}</span></div><div class="scene-card__text">${esc(gameState.lastScene)}</div>`:`<div class="scene-card__empty">아직 기록된 장면이 없습니다.<br><span class="muted">행동을 입력하고 Claude와 장면을 진행해 보세요.</span></div>`;
 }
 function renderRelationships(){const entries=Object.entries(gameState.relationships).sort((a,b)=>b[1].value-a[1].value);document.getElementById('relationshipSummary').textContent=`등록된 주요 인물 ${entries.length}명 · 관계 수치는 내부값으로 관리되고 화면에는 상태로 표시됩니다.`;document.getElementById('relationshipList').innerHTML=entries.length?entries.map(([name,r])=>`<article class="simple-card"><div class="card-row"><span class="relation-name">${esc(name)}</span><span class="relation-level">${esc(relationLevel(r.value))}</span></div><div class="subtext">${houseLetter(r.house)} ${esc(r.house||'')} · ${r.year?esc(r.year)+'학년':''}</div><div class="subtext">${esc(r.note||'')}</div></article>`).join(''):`<div class="empty">아직 등록된 관계가 없습니다.</div>`}
+function renderHomework(){
+  const el=document.getElementById('homeworkList');
+  if(!el)return;
+  const list=Array.isArray(gameState.homework)?gameState.homework:[];
+  if(!list.length){
+    el.innerHTML='<div class="empty">현재 등록된 숙제가 없습니다.</div>';
+    return;
+  }
+  el.innerHTML=list.map((h,i)=>{
+    const p=Math.max(0,Math.min(100,Number(h.progress)||0));
+    const done=p>=100||h.status==='완료';
+    return `<article class="simple-card homework-card">
+      <div class="card-row"><strong>${esc(h.title||'제목 없는 숙제')}</strong><span class="relation-level">${done?'완료':p+'%'}</span></div>
+      <div class="subtext">${esc(h.subject||'과목 미상')} · 제출: ${esc(h.due||'미정')} · 소요 ${Number(h.timeSpent)||0}분</div>
+      <div class="homework-progress"><div class="homework-progress-bar" style="width:${p}%"></div></div>
+      <div class="homework-meta"><span>${done?'✓ 완료':'진행 중'}</span><span>${p}%</span></div>
+    </article>`;
+  }).join('');
+}
+
 function renderGossip(){document.getElementById('gossipList').innerHTML=gameState.rumors.length?gameState.rumors.map(r=>`<article class="simple-card"><div class="card-row"><strong>${esc(r.text)}</strong><span class="relation-level">${esc(r.truth)}</span></div><div class="subtext">출처: ${esc(r.source||'미상')} · ${esc(r.date||'')}</div></article>`).join(''):`<div class="empty">현재 기록된 가십이 없습니다.</div>`}
 function renderInventory(){
   document.getElementById('inventoryMoney').textContent=formatMoney();
@@ -1329,6 +1379,15 @@ function mergeState(raw){
   merged.housePoints={...base.housePoints,...(incoming.housePoints||{})};
   merged.inventory=Array.isArray(incoming.inventory)?incoming.inventory.map(normalizeItemObject):base.inventory;
   merged.rumors=Array.isArray(incoming.rumors)?incoming.rumors:[];
+  merged.homework=Array.isArray(incoming.homework)?incoming.homework.map(h=>({
+    subject:String(h.subject||''),
+    title:String(h.title||''),
+    due:String(h.due||''),
+    progress:Math.max(0,Math.min(100,Number(h.progress)||0)),
+    timeSpent:Math.max(0,Number(h.timeSpent)||0),
+    status:String(h.status||((Number(h.progress)||0)>=100?'완료':'진행 중')),
+    assignedDate:String(h.assignedDate||base.date||'')
+  })):deepClone(base.homework);
   merged.letters=Array.isArray(incoming.letters)?incoming.letters:[];
   merged.clues=Array.isArray(incoming.clues)?incoming.clues:[];
   merged.events=Array.isArray(incoming.events)?incoming.events:[];
@@ -1352,7 +1411,7 @@ function stateForSave(){
 function saveAuto(){ /* 파일 저장 방식에서는 매 상태 변경 때 자동 파일을 만들지 않습니다. */ }
 function buildSavePayload(){
   return {
-    saveVersion: 11,
+    saveVersion: 12,
     gameVersion: gameState.gameVersion || 'Living in Hogwarts',
     exportedAt: new Date().toISOString(),
     state: stateForSave()
