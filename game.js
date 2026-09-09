@@ -989,6 +989,10 @@ ${action}
 - 시간표는 고정된 일정이다. 현재 일정의 종료 시각을 절대 넘기지 않는다.
 - 행동에 필요한 시간이 남은 시간보다 길다면 남은 시간까지만 처리한다.
 - 다음 일정이 시작되면 현재 장면을 마무리하고 다음 일정으로 넘어간다.
+- **시간은 반드시 실제로 흐른다.** 코델리아가 이동·대화·식사·수업·탐색·연습 등 행동을 했다면 그 행동에 걸린 시간을 반드시 [상태변경]의 '시간: +분'으로 기록한다. 장면을 진행했는데 시간이 0분인 상태변경은 만들지 않는다.
+- 수업을 들으러 가거나 수업에 참석하는 행동이라면 이동과 수업 진행에 걸린 시간을 반영한다. 예를 들어 08:00에 09:00 수업에 가서 수업을 들었다면 시간이 그대로 08:00에 머물러서는 안 되며, 실제 장면에 맞게 최소 09:00 이후로 진행한다.
+- 평범한 짧은 대화나 간단한 행동도 보통 5~20분 정도의 실제 시간을 소모한다. 행동에 걸린 시간을 임의로 0분으로 두지 않는다.
+- **[상태변경]에 시간이 바뀌었으면 반드시 '시간: +분' 한 줄을 포함한다.** 다른 상태가 바뀌지 않았더라도 시간 변화만으로 [상태변경]을 작성한다.
 - 수업 중에는 질문, 실습, 관찰, 주변 학생과의 대화, 교수와의 상호작용 등 다양한 행동이 가능하다.
 - 플레이어가 직접 행동을 제시하지 않았다고 수업을 자동으로 끝내지 않는다.
 - 평범한 하루에도 식사 중 대화, 복도에서 들은 소문, 부엉이 우편, 친구의 부탁, 게시판 공지 같은 작은 생활 이벤트를 자연스럽게 발생시킨다.
@@ -1089,10 +1093,11 @@ function parseClaudeResponse(raw){
   if(!stateMatch && !sceneMatch)return{ok:false,message:'[장면] 또는 [상태변경] 형식을 찾지 못했습니다.'};
   const block=stateMatch?stateMatch[1]:'';let changes=0;
   const lines=block.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  let timeChanged=false;
   for(const line of lines){
     let m;
-    if((m=/^시간\s*:\s*\+?(\d+)분?/i.exec(line))){if(advanceTime(+m[1]))changes++;continue;}
-    if((m=/^시간\s*:\s*(\d{1,2}:\d{2})$/i.exec(line))){const target=timeMin(m[1]);const now=timeMin(gameState.time);if(target>=now){advanceTime(target-now);changes++;}continue;}
+    if((m=/^시간\s*:\s*\+?(\d+)분?/i.exec(line))){if(advanceTime(+m[1])){changes++;timeChanged=true;}continue;}
+    if((m=/^시간\s*:\s*(\d{1,2}:\d{2})$/i.exec(line))){const target=timeMin(m[1]);const now=timeMin(gameState.time);if(target>=now){advanceTime(target-now);changes++;timeChanged=true;}continue;}
     if((m=/^날짜\s*:\s*(\d{4}-\d{1,2}-\d{1,2})$/i.exec(line))){const d=parseDateStr(m[1]);gameState.date=`${d.year}-${pad2(d.month)}-${pad2(d.day)}`;gameState.season=getSeason(d.month);changes++;continue;}
     if((m=/^위치\s*:\s*(.+)$/i.exec(line))){setLocation(m[1]);changes++;continue;}
     if((m=/^날씨\s*:\s*(.+)$/i.exec(line))){setWeather(m[1]);changes++;continue;}
@@ -1135,6 +1140,40 @@ if((m=/^관계\s*:\s*(.+?)\s+([+-]\d+)\s*$/i.exec(line))){
     if((m=/^단서\s*:\s*(.+?)(?:\s*\|\s*출처\s*:\s*(.*?))?(?:\s*\|\s*관련 물건\s*:\s*(.*))?$/i.exec(line))){const items=(m[3]||'').split(',').map(x=>x.trim()).filter(Boolean);addClue(m[1],m[2]||'',items);changes++;continue;}
     if((m=/^사건\s*:\s*(.+)$/i.exec(line))){addEvent(m[1]);changes++;continue;}
   }
+
+  // Claude가 시간 변경을 빠뜨리는 경우에도 장면이 같은 시각에 계속 고정되지 않도록 안전장치를 둡니다.
+  if(!timeChanged){
+    const sceneText=sceneMatch?.[1]||'';
+    const actionText=document.getElementById('actionInput')?.value||'';
+    const combined=`${actionText} ${sceneText}`;
+    const lower=combined.toLowerCase();
+    let fallbackMinutes=15;
+
+    // 수업 관련 장면은 다음 수업 시작 또는 현재 수업 종료까지 실제 시간을 진행합니다.
+    const classLike=/수업|교실|강의|수업을\s*(듣|받)|수업에\s*(가|참석)/.test(lower);
+    if(classLike){
+      const now=timeMin(gameState.time);
+      const schedule=nowSchedule();
+      const ongoing=schedule.find(x=>now>=timeMin(x.start)&&now<timeMin(x.end));
+      const next=ongoing||schedule.find(x=>timeMin(x.start)>now);
+      if(next){
+        const start=timeMin(next.start);
+        const end=timeMin(next.end);
+        if(!ongoing && now<start) fallbackMinutes=start-now;
+        else if(ongoing) fallbackMinutes=end-now;
+      }
+    }else{
+      const durationMatch=combined.match(/(?:약|대략|한|걸려|소요)\s*(\d+)\s*분/);
+      if(durationMatch) fallbackMinutes=Math.max(5,Number(durationMatch[1]));
+    }
+
+    if(advanceTime(fallbackMinutes)){
+      changes++;
+      timeChanged=true;
+      addChange('time',`자동 보정 · ${dateDisplay(gameState.date)} ${timeDisplay(gameState.time)}`);
+    }
+  }
+
   recordStateDiff(before);
   saveAuto();renderGame();return{ok:true,message:`장면을 반영했습니다. 상태 변경 ${changes}건`};
 }
